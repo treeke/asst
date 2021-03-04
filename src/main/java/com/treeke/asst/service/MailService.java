@@ -19,7 +19,7 @@ public class MailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    private static final String SENDER = "18011572963@163.com";
+    private static final String SENDER = "cuitpanfei@163.com";
 
     /**
      * 发送普通邮件
