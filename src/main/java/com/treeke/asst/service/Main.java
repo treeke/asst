@@ -1,14 +1,24 @@
 package com.treeke.asst.service;
 
-import com.alibaba.fastjson.JSONObject;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Date;
+import com.alibaba.fastjson.JSONObject;
+
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 @Slf4j
 @Component
@@ -27,16 +37,18 @@ public class Main {
 
     public static void start(String phone, String password, String email) throws IOException {
         String token = null;
-        while (true){
-            String slideID = getSlideID();
-            if(slideID == null){
-                continue;
+        synchronized (Main.class) {
+            while (true) {
+                String slideID = getSlideID();
+                if (slideID == null) {
+                    continue;
+                }
+                token = getToken(slideID, phone, password);
+                if (token == null) {
+                    continue;
+                }
+                break;
             }
-            token = getToken(slideID,phone,password);
-            if(token == null){
-                continue;
-            }
-            break;
         }
         //getUserInfo(phone, token);
 
@@ -158,7 +170,8 @@ public class Main {
         }
     }
 
-    private static String getSlideID(){
+    public static String getSlideID(){
+        JSONObject captcha = null;
         HttpHeaders header = createHeader(null);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("model","login");
@@ -167,18 +180,21 @@ public class Main {
         if(code1 != 200){
             return null;
         }
-        JSONObject captcha = JSONObject.parseObject(JSONObject.toJSONString(jsonObject1.get("data")));
-        captcha.put("xpos",150);
-        captcha.remove("ypos");
-        JSONObject response = HttpUtils.sendPostRequest(URL1, header, captcha);
-        Integer code2 = Integer.valueOf(response.get("code")+"");
-        if(code2 != 200){
-            return null;
-        }
-        Object data = response.get("data");
-        if(data != null){
-            return null;
-        }
+        captcha = JSONObject.parseObject(JSONObject.toJSONString(jsonObject1.get("data")));
+        Object data = null;
+        int xpos=38;
+        JSONObject response = null;
+        do {
+            xpos+=1;
+            captcha.put("xpos", xpos);
+            captcha.remove("ypos");
+            response = HttpUtils.sendPostRequest(URL1, header, captcha);
+            Integer code2 = Integer.valueOf(response.get("code") + "");
+            if (code2 != 200) {
+                return null;
+            }
+            data = response.get("data");
+        }while (data != null && xpos<260);
         return String.valueOf(captcha.get("slideID"));
     }
 
