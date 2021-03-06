@@ -181,7 +181,7 @@ public class Main {
             }
             captcha = response.getJSONObject("data");
             // response.getJSONObject("data") 不是null，说明验证失败，ypos刷新，slideID不变，继续验证
-        } while (captcha == null);
+        } while (captcha != null);
         return String.valueOf(captcha.get("slideID"));
     }
 
