@@ -1,24 +1,14 @@
 package com.treeke.asst.service;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
-import com.alibaba.fastjson.JSONObject;
-
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import java.io.IOException;
+import java.util.Date;
 
 @Slf4j
 @Component
@@ -37,18 +27,16 @@ public class Main {
 
     public static void start(String phone, String password, String email) throws IOException {
         String token = null;
-        synchronized (Main.class) {
-            while (true) {
-                String slideID = getSlideID();
-                if (slideID == null) {
-                    continue;
-                }
-                token = getToken(slideID, phone, password);
-                if (token == null) {
-                    continue;
-                }
-                break;
+        while (true) {
+            String slideID = getSlideID();
+            if (slideID == null) {
+                continue;
             }
+            token = getToken(slideID, phone, password);
+            if (token == null) {
+                continue;
+            }
+            break;
         }
         //getUserInfo(phone, token);
 
@@ -181,11 +169,9 @@ public class Main {
             return null;
         }
         captcha = JSONObject.parseObject(JSONObject.toJSONString(jsonObject1.get("data")));
-        Object data = null;
-        int xpos=38;
-        JSONObject response = null;
         do {
-            xpos+=1;
+            int xpos = ImageKit.getXpos(captcha.get("slideID").toString(), captcha.getInteger("ypos"));
+            JSONObject response = null;
             captcha.put("xpos", xpos);
             captcha.remove("ypos");
             response = HttpUtils.sendPostRequest(URL1, header, captcha);
@@ -193,8 +179,9 @@ public class Main {
             if (code2 != 200) {
                 return null;
             }
-            data = response.get("data");
-        }while (data != null && xpos<260);
+            captcha = response.getJSONObject("data");
+            // response.getJSONObject("data") 不是null，说明验证失败，ypos刷新，slideID不变，继续验证
+        } while (captcha == null);
         return String.valueOf(captcha.get("slideID"));
     }
 
