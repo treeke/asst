@@ -169,6 +169,7 @@ public class Main {
             return null;
         }
         captcha = JSONObject.parseObject(JSONObject.toJSONString(jsonObject1.get("data")));
+        String slideID = captcha.get("slideID").toString();
         do {
             int xpos = ImageKit.getXpos(captcha.get("slideID").toString(), captcha.getInteger("ypos"));
             JSONObject response = null;
@@ -182,7 +183,7 @@ public class Main {
             captcha = response.getJSONObject("data");
             // response.getJSONObject("data") 不是null，说明验证失败，ypos刷新，slideID不变，继续验证
         } while (captcha != null);
-        return String.valueOf(captcha.get("slideID"));
+        return slideID;
     }
 
     private static HttpHeaders createHeader(String accessToken) {
