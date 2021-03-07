@@ -25,7 +25,7 @@ public class Main {
         //start("15828580081", "lesile520 ");
     }
 
-    public static void start(String phone, String password, String email) throws IOException {
+    public static String start(String phone, String password, String email) throws IOException {
         String token = null;
         while (true) {
             String slideID = getSlideID();
@@ -40,24 +40,28 @@ public class Main {
         }
         //getUserInfo(phone, token);
 
-        report(phone, token);
+        String msg = report(phone, token);
         log.info("phone:[{}],Date:[{}]上报成功----------------------------------------------------------------", phone, new Date());
+        return msg;
     }
 
-    private static void report(String phone, String token) {
+    private static String report(String phone, String token) {
         JSONObject param = createParam(phone, token);
         HttpHeaders header = createHeader(token);
+        String msg;
         while(true){
             JSONObject jsonObject = HttpUtils.sendPostRequest(URL5, header, param);
-            Integer code = Integer.valueOf(jsonObject.get("code")+"");
+            Integer code = jsonObject.getInteger("code");
+            msg = jsonObject.getString("msg");
             if(code.equals(70001)){
-                break;
+                return "70001";
             }
             if(code != 200){
                 continue;
             }
             break;
         }
+        return msg;
     }
 
     private static JSONObject getUserInfo(String phone, String token) {
@@ -169,6 +173,7 @@ public class Main {
             return null;
         }
         captcha = JSONObject.parseObject(JSONObject.toJSONString(jsonObject1.get("data")));
+        String slideID = captcha.get("slideID").toString();
         do {
             int xpos = ImageKit.getXpos(captcha.get("slideID").toString(), captcha.getInteger("ypos"));
             JSONObject response = null;
@@ -182,7 +187,7 @@ public class Main {
             captcha = response.getJSONObject("data");
             // response.getJSONObject("data") 不是null，说明验证失败，ypos刷新，slideID不变，继续验证
         } while (captcha != null);
-        return String.valueOf(captcha.get("slideID"));
+        return slideID;
     }
 
     private static HttpHeaders createHeader(String accessToken) {
